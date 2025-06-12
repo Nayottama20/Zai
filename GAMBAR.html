@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Siesta AI Chat</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: #000;
+      margin: 0;
+      padding: 0;
+    }
+
+    #chatbox {
+      width: 90%;
+      max-width: 600px;
+      margin: 100px auto 0 auto;
+      background: url('https://files.catbox.moe/8vpvl4.png') no-repeat center center;
+      background-size: cover;
+      padding: 15px;
+      border-radius: 16px;
+      height: 500px;
+      overflow-y: auto;
+      box-shadow: 0 0 10px rgba(0,0,0,0.4);
+      color: white;
+      border: 5px solid #ffffff;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .msg-container {
+      display: flex;
+      flex-direction: row;
+      align-items: flex-start;
+      margin: 6px 0;
+      max-width: 90%;
+    }
+
+    .user-container {
+      align-self: flex-end;
+      flex-direction: row-reverse;
+      text-align: right;
+    }
+
+    .ai-container {
+      align-self: flex-start;
+    }
+
+    .avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      margin: 0 8px;
+      object-fit: cover;
+      border: 1px solid #ccc;
+    }
+
+    .text-block {
+      display: flex;
+      flex-direction: column;
+      max-width: 80%;
+    }
+
+    .sender-name {
+      font-size: 16px;
+      font-weight: bold;
+      margin-bottom: 4px;
+      color: #f0f0f0;
+    }
+
+    .msg {
+      padding: 12px 16px;
+      border-radius: 20px;
+      font-size: 15px;
+      line-height: 1.5;
+      word-wrap: break-word;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+      transition: all 0.2s ease-in-out;
+    }
+
+    .user {
+      background-color: #007aff;
+      color: white;
+      border-bottom-right-radius: 4px;
+    }
+
+    .ai {
+      background-color: #f1f0f0;
+      color: black;
+      border-bottom-left-radius: 4px;
+    }
+
+    #inputbox {
+      width: 90%;
+      max-width: 600px;
+      margin: 10px auto 30px auto;
+      display: flex;
+      gap: 10px;
+    }
+
+    input[type="text"] {
+      flex: 1;
+      padding: 12px 16px;
+      border: 1px solid #ccc;
+      border-radius: 20px;
+      font-size: 15px;
+      outline: none;
+    }
+
+    button {
+      padding: 10px 16px;
+      background: #007aff;
+      color: white;
+      border: none;
+      border-radius: 20px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    button:hover {
+      background: #005ecb;
+    }
+
+    #music-controls {
+      width: 90%;
+      max-width: 600px;
+      margin: 30px auto 10px auto;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      justify-content: space-between;
+      color: white;
+    }
+
+    #current-track {
+      font-size: 16px;
+      flex: 1;
+    }
+
+    input[type="file"] {
+      color: white;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Kontrol Musik -->
+  <div id="music-controls">
+    <input type="file" id="musicInput" accept="audio/*">
+    <button id="toggleMusic" onclick="toggleMusic()">🙉</button>
+    <span id="current-track">Tidak ada lagu</span>
+  </div>
+
+  <!-- Pemutar Musik -->
+  <audio id="audioPlayer" loop></audio>
+
+  <!-- Kotak Chat -->
+  <div id="chatbox"></div>
+
+  <!-- Input Pesan -->
+  <div id="inputbox">
+    <input type="text" id="userInput" placeholder="Ketik sesuatu..." />
+    <button onclick="sendMessage()">Kirim</button>
+  </div>
+
+  <script>
+    const chatbox = document.getElementById('chatbox');
+    const input = document.getElementById('userInput');
+    const audioPlayer = document.getElementById('audioPlayer');
+    const musicInput = document.getElementById('musicInput');
+    const currentTrack = document.getElementById('current-track');
+    const toggleButton = document.getElementById('toggleMusic');
+
+    const USER_AVATAR = "https://files.catbox.moe/7e4y9f.jpg";
+    const AI_AVATAR = "https://files.catbox.moe/8vpvl4.png";
+
+    const API_BASE_URL = "https://api.skyzopedia.us.kg/api/ai/openai-prompt?prompt=Sekarang Kamu Adalah Siesta dan selalu gunakan bahasa Indonesia saat menjawab semua pertanyaan&msg=";
+
+    function addMessage(text, sender) {
+      const container = document.createElement('div');
+      container.classList.add('msg-container', sender === 'user' ? 'user-container' : 'ai-container');
+
+      const avatar = document.createElement('img');
+      avatar.classList.add('avatar');
+      avatar.src = sender === 'user' ? USER_AVATAR : AI_AVATAR;
+
+      const textBlock = document.createElement('div');
+      textBlock.classList.add('text-block');
+
+      const name = document.createElement('div');
+      name.classList.add('sender-name');
+      name.textContent = sender === 'user' ? 'Anda' : 'Z/ᴀɪ';
+
+      const msg = document.createElement('div');
+      msg.classList.add('msg', sender);
+      msg.textContent = text;
+
+      textBlock.appendChild(name);
+      textBlock.appendChild(msg);
+
+      container.appendChild(avatar);
+      container.appendChild(textBlock);
+      chatbox.appendChild(container);
+      chatbox.scrollTop = chatbox.scrollHeight;
+    }
+
+    async function sendMessage() {
+      const userText = input.value.trim();
+      if (!userText) return;
+
+      addMessage(userText, 'user');
+      input.value = '';
+
+      try {
+        const res = await fetch(API_BASE_URL + encodeURIComponent(userText));
+        const data = await res.json();
+        addMessage(data.result || "Tidak ada respon dari AI.", 'ai');
+      } catch (err) {
+        addMessage("Terjadi kesalahan: " + err.message, 'ai');
+      }
+    }
+
+    input.addEventListener("keypress", function(e) {
+      if (e.key === "Enter") sendMessage();
+    });
+
+    musicInput.addEventListener('change', function () {
+      const file = this.files[0];
+      if (file) {
+        const url = URL.createObjectURL(file);
+        audioPlayer.src = url;
+        audioPlayer.play();
+        toggleButton.textContent = "🙈";
+        currentTrack.textContent = "Sedang diputar: " + file.name;
+      }
+    });
+
+    function toggleMusic() {
+      if (!audioPlayer.src) return;
+      if (audioPlayer.paused) {
+        audioPlayer.play();
+        toggleButton.textContent = "🙈";
+      } else {
+        audioPlayer.pause();
+        toggleButton.textContent = "🙉";
+      }
+    }
+  </script>
+
+</body>
+</html>
